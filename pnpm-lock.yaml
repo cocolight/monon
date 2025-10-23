@@ -35,43 +35,6 @@ importers:
       '@monon/editor':
         specifier: workspace:^
         version: link:../../packages/editor
-      vue:
-        specifier: ^3.5.22
-        version: 3.5.22(typescript@5.9.3)
-    devDependencies:
-      '@types/node':
-        specifier: ^22.18.12
-        version: 22.18.12
-      '@vitejs/plugin-vue':
-        specifier: ^6.0.1
-        version: 6.0.1(vite@7.1.11)(vue@3.5.22)
-      '@vue/tsconfig':
-        specifier: ^0.8.1
-        version: 0.8.1(typescript@5.9.3)(vue@3.5.22)
-      sass-embedded:
-        specifier: ^1.93.2
-        version: 1.93.2
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-      vite:
-        specifier: ^7.1.7
-        version: 7.1.11(@types/node@22.18.12)(sass-embedded@1.93.2)
-      vue-tsc:
-        specifier: ^3.1.0
-        version: 3.1.1(typescript@5.9.3)
-
-  packages/core:
-    dependencies:
-      '@monon/shared':
-        specifier: workspace:^
-        version: link:../shared
-
-  packages/editor:
-    dependencies:
-      '@monon/shared':
-        specifier: workspace:^
-        version: link:../shared
       markdown-it:
         specifier: ^14.1.0
         version: 14.1.0
@@ -109,6 +72,40 @@ importers:
       vue-tsc:
         specifier: ^3.1.0
         version: 3.1.1(typescript@5.9.3)
+
+  packages/core:
+    dependencies:
+      '@monon/shared':
+        specifier: workspace:^
+        version: link:../shared
+
+  packages/editor:
+    dependencies:
+      '@monon/shared':
+        specifier: workspace:^
+        version: link:../shared
+      markdown-it:
+        specifier: ^14.1.0
+        version: 14.1.0
+      monaco-editor:
+        specifier: ^0.54.0
+        version: 0.54.0
+    devDependencies:
+      '@types/markdown-it':
+        specifier: ^14.1.2
+        version: 14.1.2
+      '@types/node':
+        specifier: ^22.18.12
+        version: 22.18.12
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vite:
+        specifier: ^7.1.7
+        version: 7.1.11(@types/node@22.18.12)(sass-embedded@1.93.2)
+      vite-plugin-monaco-editor-esm:
+        specifier: ^2.0.2
+        version: 2.0.2(monaco-editor@0.54.0)
 
   packages/shared: {}
 
