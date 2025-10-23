@@ -1,0 +1,1 @@
+export const PKG_NAME = '@monon/shared' as const

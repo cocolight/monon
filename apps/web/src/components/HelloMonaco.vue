@@ -100,7 +100,8 @@ function renderDecorations() {
         if (codeLineNumber) {
           const lineContent = model.getLineContent(codeLineNumber)
           const codeMatch = lineContent.match(/`([^`]+)`/)
-          if (codeMatch) {
+          // 修复：添加空值检查
+          if (codeMatch && codeMatch[1]) {
             const startPos = lineContent.indexOf(codeMatch[0]) + 1
             const endPos = startPos + codeMatch[1].length
 
@@ -132,13 +133,19 @@ function findTokenLineNumber(model: monaco.editor.ITextModel, token: any): numbe
   const text = model.getValue()
   const lines = text.split('\n')
 
+  // 修复：添加空值检查
+  if (!token || !token.content) return null
+
   for (let i = 0; i < lines.length; i++) {
-    if (lines[i].includes(token.content)) {
+    // 修复：添加空值检查，确保 lines[i] 不为 undefined
+    const currentLine = lines[i]
+    if (currentLine && currentLine.includes(token.content)) {
       return i + 1
     }
   }
   return null
 }
+
 </script>
 
 <style scoped>

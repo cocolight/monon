@@ -22,4 +22,9 @@ export default defineConfig({
       `monaco-editor/esm/vs/editor/editor.worker`
     ],
   },
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, './src')
+    }
+  }
 });

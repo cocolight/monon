@@ -1,0 +1,16 @@
+{
+  "name": "@monon/editor",
+  "type": "module",
+  "main": "./src/index.ts",
+  "scripts": {
+    "dev": "vitest watch",
+    "build": "tsc",
+    "test": "vitest",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext ts"
+  },
+  "dependencies": {
+    "@monon/shared": "workspace:^",
+    "monaco-editor": "^0.54.0"
+  }
+}

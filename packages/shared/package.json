@@ -1,0 +1,12 @@
+{
+  "name": "@monon/shared",
+  "type": "module",
+  "main": ".src/index.ts",
+  "scripts": {
+    "dev": "vitest watch",
+    "build": "tsc",
+    "test": "vitest",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext ts"
+  }
+}
