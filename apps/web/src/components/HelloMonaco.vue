@@ -23,7 +23,7 @@ onMounted(() => {
     wordWrap: 'on',
     fontSize: 14,
     fontFamily: 'Monaco, Menlo, Consolas, monospace',
-    // 禁用Monaco的语法高亮，使用自定义装饰器
+    lineHeight: 24,
     'semanticHighlighting.enabled': false
   })
 
@@ -31,6 +31,10 @@ onMounted(() => {
   editor.onDidChangeModelContent(() => {
     if (timer) clearTimeout(timer)
     timer = setTimeout(renderDecorations, 100) as any
+  })
+
+  editor.onDidChangeCursorPosition(() => {
+    updateSelectionStyles()
   })
 })
 
@@ -40,65 +44,45 @@ function renderDecorations() {
   const tokens = md.parse(text, {})
   const newDecos: monaco.editor.IModelDeltaDecoration[] = []
 
-  let inHeading = false
-  let inBold = false
-  let inItalic = false
-  let inCode = false
-  let inLink = false
-
   tokens.forEach((token, index) => {
-    const nextToken = tokens[index + 1]
-
     switch (token.type) {
-      // 标题处理
       case 'heading_open':
-        inHeading = true
         const headingLevel = parseInt(token.tag.substring(1))
         const headingMap = token.map!
 
-        // 获取标题行内容
-        const headingLine = model.getLineContent(headingMap[0] + 1)
-        // 找到标题文本开始位置（跳过#号和空格）
-        const titleStart = headingLine.search(/[^#\s]/) + 1
+        if (headingMap && headingMap.length >= 2) {
+          const lineNumber = headingMap[0] + 1
+          const lineContent = model.getLineContent(lineNumber)
 
-        if (titleStart > 0) {
-          newDecos.push({
-            range: new monaco.Range(
-              headingMap[0] + 1,
-              titleStart,
-              headingMap[0] + 1,
-              headingLine.length + 1
-            ),
-            options: {
-              inlineClassName: `md-heading md-heading-${headingLevel}`,
-              // 保持原有文本，只添加样式
-              stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
-            }
-          })
+          const match = lineContent.match(/^#+\s+(.*)$/)
+          if (match && match[1]) {
+            const titleText = match[1]
+            const titleStart = lineContent.indexOf(titleText) + 1
+
+            newDecos.push({
+              range: new monaco.Range(
+                lineNumber,
+                titleStart,
+                lineNumber,
+                titleStart + titleText.length
+              ),
+              options: {
+                inlineClassName: `md-heading md-heading-${headingLevel}`,
+                stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
+              }
+            })
+          }
         }
         break
 
-      case 'heading_close':
-        inHeading = false
-        break
-
-      // 粗体处理
       case 'strong_open':
-        inBold = true
-        break
-
-      case 'strong_close':
-        inBold = false
-        break
-
-      case 'text':
-        if (inBold && token.content) {
-          // 找到粗体文本的位置
-          const lineNumber = findTokenLineNumber(model, token)
+        const nextToken = tokens[index + 1]
+        if (nextToken && nextToken.type === 'text') {
+          const lineNumber = findTokenLineNumber(model, nextToken)
           if (lineNumber) {
             const lineContent = model.getLineContent(lineNumber)
-            const startPos = lineContent.indexOf(token.content) + 1
-            const endPos = startPos + token.content.length
+            const startPos = lineContent.indexOf(nextToken.content) + 1
+            const endPos = startPos + nextToken.content.length
 
             newDecos.push({
               range: new monaco.Range(lineNumber, startPos, lineNumber, endPos),
@@ -111,49 +95,39 @@ function renderDecorations() {
         }
         break
 
-      // 斜体处理
-      case 'em_open':
-        inItalic = true
-        break
-
-      case 'em_close':
-        inItalic = false
-        break
-
-      // 代码处理
       case 'code_inline':
         const codeLineNumber = findTokenLineNumber(model, token)
         if (codeLineNumber) {
           const lineContent = model.getLineContent(codeLineNumber)
-          const startPos = lineContent.indexOf('`' + token.content + '`') + 2
-          const endPos = startPos + token.content.length - 1
+          const codeMatch = lineContent.match(/`([^`]+)`/)
+          if (codeMatch) {
+            const startPos = lineContent.indexOf(codeMatch[0]) + 1
+            const endPos = startPos + codeMatch[1].length
 
-          newDecos.push({
-            range: new monaco.Range(codeLineNumber, startPos, codeLineNumber, endPos),
-            options: {
-              inlineClassName: 'md-code',
-              stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
-            }
-          })
+            newDecos.push({
+              range: new monaco.Range(codeLineNumber, startPos, codeLineNumber, endPos),
+              options: {
+                inlineClassName: 'md-code',
+                stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
+              }
+            })
+          }
         }
-        break
-
-      // 链接处理
-      case 'link_open':
-        inLink = true
-        break
-
-      case 'link_close':
-        inLink = false
         break
     }
   })
 
-  // 更新装饰器
   decos = editor.deltaDecorations(decos, newDecos)
+  updateSelectionStyles()
 }
 
-// 辅助函数：根据token内容找到所在行号
+function updateSelectionStyles() {
+  const selection = editor.getSelection()
+  if (selection) {
+    editor.setSelection(selection)
+  }
+}
+
 function findTokenLineNumber(model: monaco.editor.ITextModel, token: any): number | null {
   const text = model.getValue()
   const lines = text.split('\n')
@@ -168,12 +142,34 @@ function findTokenLineNumber(model: monaco.editor.ITextModel, token: any): numbe
 </script>
 
 <style scoped>
+/* 基础编辑器样式重置 */
+:deep(.monaco-editor) {
+  text-align: left !important;
+}
+
+:deep(.view-line) {
+  min-height: 24px !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  line-height: 24px !important;
+}
+
+:deep(.view-line > span) {
+  display: inline !important;
+  vertical-align: bottom !important;
+  line-height: inherit !important;
+}
+
 /* 标题样式 */
 :deep(.md-heading-1) {
   font-size: 1.8em !important;
   font-weight: 700 !important;
   color: #d32f2f !important;
   display: inline !important;
+  line-height: 1.2 !important;
+  vertical-align: bottom !important;
+  padding-bottom: 2px !important;
+  margin: 0 !important;
 }
 
 :deep(.md-heading-2) {
@@ -181,6 +177,10 @@ function findTokenLineNumber(model: monaco.editor.ITextModel, token: any): numbe
   font-weight: 600 !important;
   color: #1976d2 !important;
   display: inline !important;
+  line-height: 1.2 !important;
+  vertical-align: bottom !important;
+  padding-bottom: 1px !important;
+  margin: 0 !important;
 }
 
 :deep(.md-heading-3) {
@@ -188,6 +188,10 @@ function findTokenLineNumber(model: monaco.editor.ITextModel, token: any): numbe
   font-weight: 600 !important;
   color: #388e3c !important;
   display: inline !important;
+  line-height: 1.2 !important;
+  vertical-align: bottom !important;
+  padding-bottom: 1px !important;
+  margin: 0 !important;
 }
 
 /* 粗体样式 */
@@ -195,6 +199,8 @@ function findTokenLineNumber(model: monaco.editor.ITextModel, token: any): numbe
   font-weight: 700 !important;
   color: #5d4037 !important;
   display: inline !important;
+  vertical-align: bottom !important;
+  line-height: inherit !important;
 }
 
 /* 代码样式 */
@@ -202,21 +208,56 @@ function findTokenLineNumber(model: monaco.editor.ITextModel, token: any): numbe
   background-color: #f5f5f5 !important;
   color: #d81b60 !important;
   font-family: monospace !important;
-  padding: 2px 4px !important;
+  padding: 1px 4px 2px 4px !important;
   border-radius: 3px !important;
   display: inline !important;
+  vertical-align: bottom !important;
+  line-height: 18px !important;
+  height: 20px !important;
+  margin: 0 1px !important;
 }
 
-/* 确保编辑器正常显示 */
-:deep(.monaco-editor) {
-  text-align: left !important;
+/* 选择区域样式 */
+:deep(.monaco-editor .view-lines .selected-text) {
+  background-color: rgba(173, 214, 255, 0.3) !important;
+  vertical-align: bottom !important;
+  line-height: inherit !important;
 }
 
-:deep(.view-line) {
-  text-align: left !important;
+:deep(.monaco-editor .view-lines .selectionHighlight) {
+  background-color: rgba(173, 214, 255, 0.3) !important;
+  vertical-align: bottom !important;
+}
+
+/* 光标样式 - 移除所有可能影响定位的样式 */
+:deep(.monaco-editor .cursors-layer .cursor) {
+  height: 20px !important;
+  /* 移除所有固定定位属性，让Monaco Editor自己管理 */
+}
+
+/* 确保所有装饰元素正确对齐 */
+:deep(.view-line [class^="md-"]) {
+  vertical-align: bottom !important;
+  line-height: inherit !important;
 }
 
 :deep(.mtk1) {
-  color: #000000 !important; /* 普通文本颜色 */
+  color: #000000 !important;
+  vertical-align: bottom !important;
+  line-height: inherit !important;
+}
+</style>
+
+<style>
+/* 全局样式覆盖 */
+.monaco-editor .view-line .selected-text {
+  background-color: rgba(173, 214, 255, 0.3) !important;
+  vertical-align: bottom !important;
+  line-height: inherit !important;
+}
+
+.monaco-editor .view-line .selectionHighlight {
+  background-color: rgba(173, 214, 255, 0.3) !important;
+  vertical-align: bottom !important;
 }
 </style>
