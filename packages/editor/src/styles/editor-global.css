@@ -1,0 +1,13 @@
+/* src/styles/editor-global.css */
+/* 全局样式覆盖（仅保留组件内 :deep() 未覆盖的样式，避免重复） */
+/* 注：若组件内 :deep() 已覆盖以下样式，可删除此文件，或仅保留必要的全局样式 */
+.monaco-editor .view-line .selected-text {
+  background-color: rgba(173, 214, 255, 0.3) !important;
+  vertical-align: bottom !important;
+  line-height: inherit !important;
+}
+
+.monaco-editor .view-line .selectionHighlight {
+  background-color: rgba(173, 214, 255, 0.3) !important;
+  vertical-align: bottom !important;
+}
